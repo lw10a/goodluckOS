@@ -1,0 +1,30 @@
+name: Build kernel (Wi-Fi/USB patch)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  kernel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply Wi-Fi/USB patch
+        run: |
+          if [ -f wifi-support.patch ]; then
+            patch -p1 < wifi-support.patch
+          else
+            echo "wifi-support.patch not found, building unpatched kernel"
+          fi
+          grep -n "drive-vbus-en" kernel/dts/ga36mb.dtsi || echo "WARNING: dts patch not applied"
+
+      - name: Build kernel
+        working-directory: kernel
+        run: ./build.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kernel-images
+          path: kernel/out/
+          retention-days: 14
